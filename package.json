@@ -1,0 +1,20 @@
+{
+  "name": "unipay",
+  "version": "1.0.0",
+  "description": "A unified payment management platform",
+  "homepage": "https://github.com/msagr/unipay#readme",
+  "bugs": {
+    "url": "https://github.com/msagr/unipay/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/msagr/unipay.git"
+  },
+  "license": "MIT",
+  "author": "msagr",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}
