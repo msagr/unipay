@@ -5,6 +5,7 @@ import morgan from "morgan";
 import connectionToDB from "./config/db.js";
 import { morganMiddleware, systemLogs } from "./utils/logger.js";
 import mongoSanitize from "express-mongo-sanitize";
+import { errorHandler, notFound } from "./middleware/errorMiddleware.js";
 
 dotenv.config();
 
@@ -21,6 +22,8 @@ app.use(express.urlencoded({extended: false}));
 app.use(cookieParser());
 app.use(mongoSanitize());
 app.use(morganMiddleware);
+app.use(notFound);
+app.use(errorHandler);
 
 app.get("/api/v1/test", (req, res) => {
     res.json({message: "Hello World"});
