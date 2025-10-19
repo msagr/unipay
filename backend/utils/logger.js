@@ -21,13 +21,10 @@ export const systemLogs = createLogger({
         prettyPrint()
     ),
     transports: [
-        // Temporarily use console only for development
-        new transports.Console(),
-        // fileRotateTransport,
-        // new transports.File({
-        //     filename: "logs/error.log",
-        //     level: "error"
-        // })
+        new transports.Console(), 
+        new transports.File({
+            filename: "logs/app.log" 
+        })
     ],
     // exceptionHandlers: [
     //     new transports.File({
@@ -42,20 +39,11 @@ export const systemLogs = createLogger({
 });
 
 export const morganMiddleware = morgan(
-    function(tokens, req, res) {
-        return JSON.stringify({
-            method: tokens.method(req, res),
-            url: tokens.url(req, res),
-            status: Number.parseFloat(tokens.res(req, res)),
-            responseTime: Number.parseFloat(tokens["response-time"](req, res)),
-            content_length: tokens.res(req, res, "content-length")
-        })
-    },
+    'combined',
     {
         stream: {
             write: (message) => {
-                const data = JSON.parse(message);
-                systemLogs.http(`incoming-request`, data);
+                console.log('HTTP Request:', message.trim());
             }
         }
     }
