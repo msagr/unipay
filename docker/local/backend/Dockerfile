@@ -21,6 +21,8 @@ COPY backend/package*.json .
 RUN npm install
 COPY --chown=unipay:unipay backend/ ${APP_HOME}
 
+# Create logs directory for winston logger
+RUN mkdir -p logs
 RUN chown -R unipay:unipay ${APP_HOME}
 USER unipay
 

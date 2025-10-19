@@ -12,6 +12,8 @@
 
 - Backend => 3000 (via npm run dev)
 - Backend => 3001 (via docker)
+- Frontend => 4000 (via npm run dev)
+- Frontend => 4001 (via docker)
 - MongoDB => 27017
 - Mongo Express => 8081
 - Mailhog => 1025

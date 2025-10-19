@@ -21,22 +21,24 @@ export const systemLogs = createLogger({
         prettyPrint()
     ),
     transports: [
-        fileRotateTransport,
-        new transports.File({
-            filename: "logs/error.log",
-            level: "error"
-        })
+        // Temporarily use console only for development
+        new transports.Console(),
+        // fileRotateTransport,
+        // new transports.File({
+        //     filename: "logs/error.log",
+        //     level: "error"
+        // })
     ],
-    exceptionHandlers: [
-        new transports.File({
-            filename: "logs/exceptions.log"
-        })
-    ],
-    rejectionHandlers: [
-        new transports.File({
-            filename: "logs/rejections.log"
-        })
-    ]
+    // exceptionHandlers: [
+    //     new transports.File({
+    //         filename: "logs/exceptions.log"
+    //     })
+    // ],
+    // rejectionHandlers: [
+    //     new transports.File({
+    //         filename: "logs/rejections.log"
+    //     })
+    // ]
 });
 
 export const morganMiddleware = morgan(
