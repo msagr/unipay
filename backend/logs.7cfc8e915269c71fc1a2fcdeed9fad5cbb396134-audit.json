@@ -1,0 +1,20 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 14
+    },
+    "auditLog": "logs\\.7cfc8e915269c71fc1a2fcdeed9fad5cbb396134-audit.json",
+    "files": [
+        {
+            "date": 1760852761016,
+            "name": "logs\\unipay-2025-10-19.log",
+            "hash": "c9b8cacd9d9e2f993b73363941568b90de85f81f6b82537d47b312b2c976d73d"
+        },
+        {
+            "date": 1760897760822,
+            "name": "logs/unipay-2025-10-19.log",
+            "hash": "60cc35b7408c57fbaf73c8b8ec290e3834a7efb7aabb7ceba0b5e78246cbace8"
+        }
+    ],
+    "hashType": "sha256"
+}

@@ -15,7 +15,7 @@ const userSchema = new Schema({
         lowercase: true,
         validate: {
             validator: function(value) {
-                return /^[A-z][A-z0-9-_]{4, 23}$/.test(value);
+                return /^[a-z][a-z0-9-_]{3,23}$/i.test(value);
             },
             message: "Must start with letter, use a-z, 0-9, -, _"
         }
@@ -50,9 +50,9 @@ const userSchema = new Schema({
         type: String,
         required: [true, "Password required"],
         trim: true,
-        validate: [validator.isStrongPassword, "Use min. 8 chars with mix of cases, numbers & symbols"]
+        minlength: [8, "Password must be at least 8 characters long"]
     },
-    confirmPassword: {
+    passwordConfirm: {
         type: String,
         required: [true, "Confirm password required"],
         validate: {
@@ -78,10 +78,12 @@ const userSchema = new Schema({
     phoneNumber: {
         type: String,
         default: "+121234567890",
-        validate: [
-            validator.isMobilePhone,
-            "Invalid phone number"
-        ]
+        validate: {
+            validator: function(v) {
+                return /^[+]?[0-9\s-()]{10,20}$/.test(v);
+            },
+            message: "Please enter a valid phone number"
+        }
     },
     address: String,
     city: String,
@@ -100,22 +102,26 @@ const userSchema = new Schema({
     timestamps: true
 });
 
-userSchema.save("save", async function(next) {
-    if (this.roles.length === 0) {
-        this.roles.push(USER);
-        next();
+userSchema.pre("save", async function(next) {
+    if (!this.role || this.role.length === 0) {
+        this.role = [USER];
     }
+    next();
 });
 
 userSchema.pre("save", async function (next) {
-	if (!this.isModified("password")) {
-		return next();
-	}
+    if (!this.isModified("password")) {
+        return next();
+    }
 
-	const salt = await bcrypt.genSalt(10);
-	this.password = await bcrypt.hash(this.password, salt);
-	this.passwordConfirm = undefined;
-	next();
+    try {
+        const salt = await bcrypt.genSalt(10);
+        this.password = await bcrypt.hash(this.password, salt);
+        this.passwordConfirm = undefined;
+        next();
+    } catch (error) {
+        next(error);
+    }
 });
 
 userSchema.pre("save", async function (next) {

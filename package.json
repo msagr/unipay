@@ -29,5 +29,8 @@
   "license": "MIT",
   "author": "msagr",
   "type": "module",
-  "main": "index.js"
+  "main": "index.js",
+  "dependencies": {
+    "express-mongo-sanitize": "^2.2.0"
+  }
 }

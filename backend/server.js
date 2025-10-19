@@ -4,8 +4,9 @@ import express from "express";
 import morgan from "morgan";
 import connectionToDB from "./config/db.js";
 import { morganMiddleware, systemLogs } from "./utils/logger.js";
-import mongoSanitize from "express-mongo-sanitize";
 import { errorHandler, notFound } from "./middleware/errorMiddleware.js";
+import authRoutes from "./routes/authRoutes.js";
+import { sanitizeRequest } from "./middleware/sanitizeMiddleware.js";
 
 dotenv.config();
 
@@ -20,14 +21,18 @@ if (process.env.NODE_ENV === 'development') {
 app.use(express.json());
 app.use(express.urlencoded({extended: false}));
 app.use(cookieParser());
-app.use(mongoSanitize());
 app.use(morganMiddleware);
-app.use(notFound);
-app.use(errorHandler);
+app.use(sanitizeRequest);
 
 app.get("/api/v1/test", (req, res) => {
     res.json({message: "Hello World"});
 });
+
+app.use("/api/v1/auth", authRoutes);
+
+
+app.use(notFound);
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 3000;
 
