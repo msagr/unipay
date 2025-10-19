@@ -4,7 +4,7 @@ services:
       restart: always
       build:
         context: .
-        dockerfile: docker/local/express/Dockerfile
+        dockerfile: docker/local/backend/Dockerfile
       ports:
         - "3001:3000"
       volumes:
@@ -16,6 +16,26 @@ services:
         - MONGO_URI=${MONGO_URI}
       depends_on:
         - mongo
+      networks:
+        - unipay
+    
+    frontend:
+      container_name: frontend
+      restart: always
+      build:
+        context: .
+        dockerfile: docker/local/frontend/Dockerfile
+      ports:
+        - "4001:4000"
+      volumes:
+        - ./frontend:/app
+        - /app/node_modules
+        - /app/.next
+      environment:
+        - NODE_ENV=${NODE_ENV}
+        - PORT=4000
+      depends_on:
+        - api
       networks:
         - unipay
     
