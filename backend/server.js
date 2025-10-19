@@ -4,6 +4,7 @@ import express from "express";
 import morgan from "morgan";
 import connectionToDB from "./config/db.js";
 import { morganMiddleware, systemLogs } from "./utils/logger.js";
+import mongoSanitize from "express-mongo-sanitize";
 
 dotenv.config();
 
@@ -18,6 +19,7 @@ if (process.env.NODE_ENV === 'development') {
 app.use(express.json());
 app.use(express.urlencoded({extended: false}));
 app.use(cookieParser());
+app.use(mongoSanitize());
 app.use(morganMiddleware);
 
 app.get("/api/v1/test", (req, res) => {
