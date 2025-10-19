@@ -17,3 +17,12 @@
 - Mailhog => 1025
 - Mailhog UI => 8025
 
+## Npm Log Levels
+
+0 - error => serious problem or failure.
+1 - warn => non blocking warning about system exception.
+2 - info => information messages about the app's current state.
+3 - http => logs out HTTP request-related messages.
+4 - verbose => records detailed messages.
+5 - debug => helps in debugging code.
+6 - silly => current stack trace of the function should be printed out.
