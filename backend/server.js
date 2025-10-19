@@ -2,9 +2,12 @@ import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 import express from "express";
 import morgan from "morgan";
+import connectionToDB from "./config/db.js";
 import { morganMiddleware, systemLogs } from "./utils/logger.js";
 
 dotenv.config();
+
+await connectionToDB();
 
 const app = express();
 
