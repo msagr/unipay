@@ -3,11 +3,14 @@ import getUserProfile from "../controllers/user/getUserProfile.js";
 import checkAuth from "../middleware/checkAuthMiddleware.js";
 import updateUserProfile from "../controllers/user/updateUserProfile.js";
 import deleteAccount from "../controllers/user/deleteAccount.js";
+import getAllUserAccounts from "../controllers/user/getAllUserAccount.js";
 
 const router = express.Router();
 
-router.route("/profile").get(checkAuth, getUserProfile);
-router.patch("/profile", checkAuth, updateUserProfile);
-router.delete("/profile", checkAuth, deleteAccount);
+router.route("/profile").get(checkAuth, getUserProfile)
+.patch(checkAuth, updateUserProfile)
+.delete(checkAuth, deleteAccount);
+
+router.route("/all").get(checkAuth, getAllUserAccounts);
 
 export default router;
