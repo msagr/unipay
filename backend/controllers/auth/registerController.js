@@ -14,6 +14,13 @@ const { randomBytes } = await import("crypto");
 const registerUser = asyncHandler(async (req, res) => {
 	const { email, username, firstName, lastName, password, passwordConfirm } =
 		req.body;
+	
+	const incomingRoles = req.body.roles;
+	const roles = incomingRoles === undefined
+    	? undefined
+    	: Array.isArray(incomingRoles)
+    	? incomingRoles
+    	: [incomingRoles];
 
 	if (!email) {
 		res.status(400);
@@ -56,6 +63,7 @@ const registerUser = asyncHandler(async (req, res) => {
 		lastName,
 		password,
 		passwordConfirm,
+		...(roles ? { roles } : {}),
 	});
 
 	const registeredUser = await newUser.save();

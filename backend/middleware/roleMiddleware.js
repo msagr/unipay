@@ -14,6 +14,9 @@ const checkRole = (...allowedRoles) => {
 
 		const rolesArray = [...allowedRoles];
 
+		console.dir(req, { depth: 1, colors: true });
+		console.log(`Request roles: ${req.roles}`);
+
 		const roleFound = req.roles
 			.map((role) => rolesArray.includes(role))
 			.find((value) => value === true);

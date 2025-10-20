@@ -91,7 +91,7 @@ const userSchema = new Schema({
     city: String,
     country: String,
     passwordChangedAt: Date,
-    role: {
+    roles: {
         type: [String],
         default: [USER]
     },
@@ -105,8 +105,8 @@ const userSchema = new Schema({
 });
 
 userSchema.pre("save", async function(next) {
-    if (!this.role || this.role.length === 0) {
-        this.role = [USER];
+    if (!this.roles || this.roles.length === 0) {
+        this.roles = [USER];
     }
     next();
 });

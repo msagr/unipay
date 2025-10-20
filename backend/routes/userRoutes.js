@@ -4,6 +4,10 @@ import checkAuth from "../middleware/checkAuthMiddleware.js";
 import updateUserProfile from "../controllers/user/updateUserProfile.js";
 import deleteAccount from "../controllers/user/deleteAccount.js";
 import getAllUserAccounts from "../controllers/user/getAllUserAccount.js";
+import deleteUserAccount from "../controllers/user/deleteUserAccount.js";
+import role from "../middleware/roleMiddleware.js";
+import { ADMIN, USER } from "../constants/index.js";
+import deactivateUser from "../controllers/auth/deactivateUser.js";
 
 const router = express.Router();
 
@@ -11,6 +15,8 @@ router.route("/profile").get(checkAuth, getUserProfile)
 .patch(checkAuth, updateUserProfile)
 .delete(checkAuth, deleteAccount);
 
-router.route("/all").get(checkAuth, getAllUserAccounts);
+router.route("/all").get(checkAuth, role.checkRole(ADMIN), getAllUserAccounts);
+router.route("/:id").delete(checkAuth, role.checkRole(ADMIN), deleteUserAccount);
+router.route("/:id/deactivate").patch(checkAuth, role.checkRole(ADMIN), deactivateUser);
 
 export default router;
