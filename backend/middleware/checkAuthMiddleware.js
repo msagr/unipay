@@ -12,7 +12,6 @@ const checkAuth = asyncHandler(async (req, res, next) => {
 
 	if (authHeader && authHeader.startsWith("Bearer")) {
 		jwt_token = authHeader.split(" ")[1];
-
 		jwt.verify(
 			jwt_token,
 			process.env.JWT_ACCESS_SECRET_KEY,
