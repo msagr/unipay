@@ -24,6 +24,7 @@
     "docker:logs-frontend": "docker compose -f local.yml logs frontend",
     "docker:user-frontend": "docker run --rm unipay-frontend whoami",
     "docker:volume-frontend": "docker volume inspect unipay_mongo-data",
+    "docker:logs-nginx": "docker compose -f local.yml logs nginx",
     "dev": "npm run docker:up && npm run docker:logs api"
   },
   "license": "MIT",
