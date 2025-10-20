@@ -30,8 +30,6 @@ services:
         - "4001:4000"
       volumes:
         - ./frontend:/app
-        - /app/.next
-        - /app/node_modules
       environment:
         - NODE_ENV=${NODE_ENV}
         - PORT=4000
