@@ -54,7 +54,9 @@ const userSchema = new Schema({
     },
     passwordConfirm: {
         type: String,
-        required: [true, "Confirm password required"],
+        required: function() {
+            return this.isNew; 
+        },
         validate: {
             validator: function(value) {
                 return this.password === value;
