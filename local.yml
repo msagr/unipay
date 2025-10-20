@@ -16,6 +16,7 @@ services:
         - MONGO_URI=${MONGO_URI}
       depends_on:
         - mongo
+        - mailhog
       networks:
         - unipay
     

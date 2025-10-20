@@ -80,6 +80,9 @@ const registerUser = asyncHandler(async (req, res) => {
 			link: emailLink,
 		};
 
+        console.log("payload: ", payload);
+        console.log("email: ", registeredUser.email);
+        
 		await sendEmail(
 			registeredUser.email,
 			"Account Verification",

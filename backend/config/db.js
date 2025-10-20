@@ -11,10 +11,10 @@ const connectionToDB = async () => {
             params
         );
         console.log(`MongoDB Connected: ${connect.connection.host}`);
-        systemLogs.info(`MongoDB Connected: ${connect.connection.host}`);
+        // systemLogs.info(`MongoDB Connected: ${connect.connection.host}`);
     } catch (error) {
         console.error(`Error: ${error}`);
-        systemLogs.error(error);
+        // systemLogs.error(error);
     }
 };
 

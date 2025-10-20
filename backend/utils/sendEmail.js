@@ -24,9 +24,11 @@ const sendEmail = async (email, subject, payload, template) => {
 			subject: subject,
 			html: compiledTemplate(payload),
 		};
+        console.log("Hello, I am here");
 		await transporter.sendMail(emailOptions);
 	} catch (error) {
-		systemLogs.error(`email not sent: ${error}`);
+        console.error(`Error: ${error}`);
+		// systemLogs.error(`email not sent: ${error}`);
 	}
 };
 
