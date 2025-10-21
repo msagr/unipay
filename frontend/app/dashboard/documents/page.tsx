@@ -65,7 +65,7 @@ const mockDocuments = [
   {
     _id: "3",
     documentNumber: "EST-2023-001",
-    documentType: "Estimate",
+    documentType: "Receipt",
     customer: { name: "Acme Corp" },
     total: 2200.00,
     dueDate: new Date("2023-12-01"),

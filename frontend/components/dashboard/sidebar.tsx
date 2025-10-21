@@ -32,11 +32,6 @@ const navItems = [
     icon: FileText,
   },
   {
-    name: 'Payments',
-    href: '/dashboard/payments',
-    icon: CreditCard,
-  },
-  {
     name: 'Settings',
     href: '/dashboard/settings',
     icon: Settings,

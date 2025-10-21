@@ -27,11 +27,6 @@ const documentTypes = [
     label: 'Quotation',
     icon: FileDigit 
   },
-  { 
-    value: 'estimate', 
-    label: 'Estimate',
-    icon: FileCheck 
-  },
 ];
 
 interface DocumentTypeProps {
