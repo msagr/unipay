@@ -49,7 +49,7 @@ interface ApiResponse {
 
 export default function CustomersPageUI() {
   const router = useRouter();
-  const username = localStorage.getItem("username") || null;
+  const username = typeof window !== "undefined" && window.localStorage ? window.localStorage.getItem("username") : null;
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [totalCustomers, setTotalCustomers] = useState(0);
   const [numberOfPages, setNumberOfPages] = useState(0);
@@ -68,7 +68,7 @@ export default function CustomersPageUI() {
 
       try {
         setLoading(true);
-        const accessKey = localStorage.getItem(username);
+        const accessKey = typeof window !== "undefined" && window.localStorage ? window.localStorage.getItem(username) : null;
         if (!accessKey) throw new Error('Access key not found');
 
         const res = await fetch(

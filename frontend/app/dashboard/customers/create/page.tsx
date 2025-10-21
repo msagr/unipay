@@ -37,7 +37,7 @@ export default function CustomerCreateForm() {
   const [loading, setLoading] = useState(false);
 
   // ✅ Get username from Redux store at the top level
-  const username = localStorage.getItem("username") || null;
+  const username = typeof window !== "undefined" && window.localStorage ? window.localStorage.getItem("username") : null;
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -57,7 +57,7 @@ export default function CustomerCreateForm() {
       setLoading(true);
 
       
-      const accessToken = username ? localStorage.getItem(username) : null;
+      const accessToken = typeof window !== "undefined" && window.localStorage ? window.localStorage.getItem("username") : null;
 
       if (!accessToken) {
         toast.error('No access token found. Please log in again.');
