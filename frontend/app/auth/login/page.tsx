@@ -14,6 +14,8 @@ import { Icons } from "@/components/icons";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import React from "react";
+import { useAppDispatch } from "@/lib/hooks";
+import { setUsername } from "@/lib/store";
 
 // Wrapper component that uses useSearchParams
 function LoginFormWrapper() {
@@ -24,6 +26,7 @@ function LoginFormWrapper() {
 // Main login form component that receives searchParams as a prop
 function LoginForm({ searchParams }: { searchParams: URLSearchParams }) {
   const router = useRouter();
+  const dispatch = useAppDispatch();
   
   const loginSchema = z.object({
     email: z.email("Please enter a valid email address"),
@@ -62,7 +65,16 @@ function LoginForm({ searchParams }: { searchParams: URLSearchParams }) {
         toast.error(`${result?.message || "Something went wrong"}`);
         return;
       }
+
+      if (result.username) {
+        dispatch(setUsername(result.username));
+      }
       
+      if (result.accessToken && result.username) {
+        localStorage.setItem("username", result.username);
+        localStorage.setItem(result.username, result.accessToken);
+      }
+
       // Redirect to dashboard or return URL using the searchParams prop
       const redirectTo = searchParams?.get("redirectTo") || "/dashboard";
       router.push(redirectTo);
@@ -76,7 +88,15 @@ function LoginForm({ searchParams }: { searchParams: URLSearchParams }) {
 
   return (
     <div className="container flex h-screen w-screen flex-col items-center justify-center">
-      <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[400px]">
+      <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px] relative">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="absolute left-0 top-0"
+          onClick={() => router.push('/')}
+        >
+          <Icons.arrowLeft className="h-4 w-4" />
+        </Button>
         <div className="flex flex-col space-y-2 text-center">
           <h1 className="text-2xl font-semibold tracking-tight">Welcome back</h1>
           <p className="text-sm text-muted-foreground">

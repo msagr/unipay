@@ -9,11 +9,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { CalendarIcon, Plus, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 type LineItem = {
   id: string;
@@ -24,9 +24,9 @@ type LineItem = {
 };
 
 type Customer = {
-  id: string;
+  _id: string;
   name: string;
-  email: string;
+  email?: string;
   phone?: string;
   address?: string;
 };
@@ -38,6 +38,7 @@ export function InvoiceForm() {
     new Date(new Date().setDate(new Date().getDate() + 30))
   );
   const [customer, setCustomer] = useState<Customer | null>(null);
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const [lineItems, setLineItems] = useState<LineItem[]>([
     { id: '1', description: '', quantity: 1, rate: 0, amount: 0 },
   ]);
@@ -49,18 +50,40 @@ export function InvoiceForm() {
   const [terms, setTerms] = useState('');
   const [currency, setCurrency] = useState('USD');
 
-  // Mock customers - replace with your actual data fetching
-  const customers: Customer[] = [
-    { id: '1', name: 'Acme Inc', email: 'billing@acme.com', phone: '+1 (555) 123-4567' },
-    { id: '2', name: 'Globex Corp', email: 'accounts@globex.com', phone: '+1 (555) 987-6543' },
-  ];
+  const username = typeof window !== 'undefined' ? localStorage.getItem('username') : null;
 
-  // Calculate amounts when line items change
+  // 🔹 Fetch customers from backend
   useEffect(() => {
-    const newSubtotal = lineItems.reduce((sum, item) => sum + (item.quantity * item.rate), 0);
+    const fetchCustomers = async () => {
+      if (!username) return;
+      try {
+        const accessKey = localStorage.getItem(username);
+        if (!accessKey) throw new Error("Access key not found");
+
+        const res = await fetch("http://localhost:3000/api/v1/customer/all", {
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${accessKey}`,
+          },
+        });
+
+        if (!res.ok) throw new Error("Failed to fetch customers");
+
+        const data = await res.json();
+        setCustomers(data.myCustomers || []);
+      } catch (err: any) {
+        toast.error(err.message || "Error fetching customers");
+      }
+    };
+
+    fetchCustomers();
+  }, [username]);
+
+  // 🔹 Calculate totals when line items change
+  useEffect(() => {
+    const newSubtotal = lineItems.reduce((sum, item) => sum + item.quantity * item.rate, 0);
     const newTaxAmount = newSubtotal * (taxRate / 100);
     const newTotal = newSubtotal + newTaxAmount;
-
     setSubtotal(newSubtotal);
     setTaxAmount(newTaxAmount);
     setTotal(newTotal);
@@ -92,25 +115,42 @@ export function InvoiceForm() {
     );
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement form submission
-    console.log({
-      customer,
-      date,
-      dueDate,
-      lineItems,
-      subtotal,
-      taxRate,
-      taxAmount,
-      total,
-      notes,
-      terms,
-      currency
+    if (!customer) {
+      toast.error("Please select a customer");
+      return;
+    }
+
+    const accessKey = username ? localStorage.getItem(username) : null;
+    const res = await fetch("http://localhost:3000/api/v1/document/create", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${accessKey}`,
+      },
+      body: JSON.stringify({
+        customer,
+        date,
+        dueDate,
+        lineItems,
+        subtotal,
+        taxRate,
+        taxAmount,
+        total,
+        notes,
+        terms,
+        currency
+      }),
     });
-    
-    // Redirect after submission
-    router.push('/dashboard/documents');
+
+    if (!res.ok) {
+      toast.error("Failed to create document. Please try again.");
+      return;
+    }
+
+    toast.success("Document created successfully");
+    router.push("/dashboard/documents");
   };
 
   return (
@@ -118,28 +158,23 @@ export function InvoiceForm() {
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Create Invoice</h1>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => router.back()}>
-            Cancel
-          </Button>
-          <Button onClick={handleSubmit}>
-            Save Invoice
-          </Button>
+          <Button variant="outline" onClick={() => router.back()}>Cancel</Button>
+          <Button onClick={handleSubmit}>Save Invoice</Button>
         </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Customer Details */}
         <Card>
-          <CardHeader>
-            <CardTitle>Customer Details</CardTitle>
-          </CardHeader>
+          <CardHeader><CardTitle>Customer Details</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="customer">Customer</Label>
                 <Select
-                  value={customer?.id || ''}
+                  value={customer?._id || ''}
                   onValueChange={(value) => {
-                    const selectedCustomer = customers.find(c => c.id === value);
+                    const selectedCustomer = customers.find(c => c._id === value);
                     setCustomer(selectedCustomer || null);
                   }}
                 >
@@ -147,37 +182,24 @@ export function InvoiceForm() {
                     <SelectValue placeholder="Select a customer" />
                   </SelectTrigger>
                   <SelectContent>
-                    {customers.map((customer) => (
-                      <SelectItem key={customer.id} value={customer.id}>
-                        {customer.name}
-                      </SelectItem>
+                    {customers.map((c) => (
+                      <SelectItem key={c._id} value={c._id}>{c.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div className="space-y-2">
                 <Label>Invoice Date</Label>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !date && "text-muted-foreground"
-                      )}
-                    >
+                    <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !date && "text-muted-foreground")}>
                       <CalendarIcon className="mr-2 h-4 w-4" />
                       {date ? format(date, 'PPP') : <span>Pick a date</span>}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0">
-                    <Calendar
-                      mode="single"
-                      selected={date}
-                      onSelect={setDate}
-                      initialFocus
-                    />
+                    <Calendar mode="single" selected={date} onSelect={setDate} initialFocus />
                   </PopoverContent>
                 </Popover>
               </div>
@@ -186,37 +208,21 @@ export function InvoiceForm() {
                 <Label>Due Date</Label>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !dueDate && "text-muted-foreground"
-                      )}
-                    >
+                    <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !dueDate && "text-muted-foreground")}>
                       <CalendarIcon className="mr-2 h-4 w-4" />
                       {dueDate ? format(dueDate, 'PPP') : <span>Pick a due date</span>}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0">
-                    <Calendar
-                      mode="single"
-                      selected={dueDate}
-                      onSelect={setDueDate}
-                      initialFocus
-                    />
+                    <Calendar mode="single" selected={dueDate} onSelect={setDueDate} initialFocus />
                   </PopoverContent>
                 </Popover>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="currency">Currency</Label>
-                <Select
-                  value={currency}
-                  onValueChange={setCurrency}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select currency" />
-                  </SelectTrigger>
+                <Select value={currency} onValueChange={setCurrency}>
+                  <SelectTrigger><SelectValue placeholder="Select currency" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="USD">USD ($)</SelectItem>
                     <SelectItem value="EUR">EUR (€)</SelectItem>
@@ -229,112 +235,65 @@ export function InvoiceForm() {
           </CardContent>
         </Card>
 
+        {/* Line Items */}
         <Card>
-          <CardHeader>
-            <div className="flex justify-between items-center">
-              <CardTitle>Line Items</CardTitle>
-              <Button type="button" onClick={addLineItem} variant="outline" size="sm">
-                <Plus className="mr-2 h-4 w-4" /> Add Item
-              </Button>
-            </div>
+          <CardHeader className="flex justify-between items-center">
+            <CardTitle>Line Items</CardTitle>
+            <Button type="button" onClick={addLineItem} variant="outline" size="sm">
+              <Plus className="mr-2 h-4 w-4" /> Add Item
+            </Button>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[50%]">Description</TableHead>
-                  <TableHead className="text-right">Quantity</TableHead>
-                  <TableHead className="text-right">Rate</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
-                  <TableHead className="w-[50px]"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {lineItems.map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell className="p-1">
-                      <Input
-                        type="text"
-                        value={item.description}
-                        onChange={(e) =>
-                          updateLineItem(item.id, 'description', e.target.value)
-                        }
-                        placeholder="Item description"
-                        className="border-0 focus-visible:ring-1"
-                      />
-                    </TableCell>
-                    <TableCell className="p-1">
-                      <div className="flex items-center">
-                        <Input
-                          type="number"
-                          min="1"
-                          value={item.quantity}
-                          onChange={(e) =>
-                            updateLineItem(item.id, 'quantity', parseInt(e.target.value) || 0)
-                          }
-                          className="text-right border-0 focus-visible:ring-1"
-                        />
-                      </div>
-                    </TableCell>
-                    <TableCell className="p-1">
-                      <Input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={item.rate}
-                        onChange={(e) =>
-                          updateLineItem(item.id, 'rate', parseFloat(e.target.value) || 0)
-                        }
-                        className="text-right border-0 focus-visible:ring-1"
-                      />
-                    </TableCell>
-                    <TableCell className="text-right p-1">
-                      {currency} {(item.quantity * item.rate).toFixed(2)}
-                    </TableCell>
-                    <TableCell className="p-1">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => removeLineItem(item.id)}
-                        className="h-8 w-8"
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <div className="overflow-x-auto">
+              <table className="w-full table-auto border-collapse">
+                <thead>
+                  <tr>
+                    <th className="text-left">Description</th>
+                    <th className="text-right">Quantity</th>
+                    <th className="text-right">Rate</th>
+                    <th className="text-right">Amount</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {lineItems.map((item) => (
+                    <tr key={item.id}>
+                      <td>
+                        <Input value={item.description} onChange={(e) => updateLineItem(item.id, 'description', e.target.value)} placeholder="Description" />
+                      </td>
+                      <td>
+                        <Input type="number" min={1} value={item.quantity} onChange={(e) => updateLineItem(item.id, 'quantity', parseInt(e.target.value) || 0)} />
+                      </td>
+                      <td>
+                        <Input type="number" min={0} step={0.01} value={item.rate} onChange={(e) => updateLineItem(item.id, 'rate', parseFloat(e.target.value) || 0)} />
+                      </td>
+                      <td className="text-right">{currency} {(item.quantity * item.rate).toFixed(2)}</td>
+                      <td>
+                        <Button type="button" variant="ghost" size="icon" onClick={() => removeLineItem(item.id)}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </CardContent>
         </Card>
 
+        {/* Additional Info & Summary */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="md:col-span-2 space-y-6">
             <Card>
-              <CardHeader>
-                <CardTitle>Additional Information</CardTitle>
-              </CardHeader>
+              <CardHeader><CardTitle>Additional Information</CardTitle></CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="notes">Notes</Label>
-                  <Textarea
-                    id="notes"
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    placeholder="Add any additional notes or terms"
-                    rows={3}
-                  />
+                <div>
+                  <Label>Notes</Label>
+                  <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} placeholder="Additional notes" />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="terms">Terms & Conditions</Label>
-                  <Textarea
-                    id="terms"
-                    value={terms}
-                    onChange={(e) => setTerms(e.target.value)}
-                    placeholder="Payment terms, late fees, etc."
-                    rows={3}
-                  />
+                <div>
+                  <Label>Terms & Conditions</Label>
+                  <Textarea value={terms} onChange={(e) => setTerms(e.target.value)} rows={3} placeholder="Payment terms, late fees, etc." />
                 </div>
               </CardContent>
             </Card>
@@ -342,55 +301,26 @@ export function InvoiceForm() {
 
           <div className="space-y-6">
             <Card>
-              <CardHeader>
-                <CardTitle>Summary</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Subtotal</span>
-                  <span className="font-medium">
-                    {currency} {subtotal.toFixed(2)}
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between">
+              <CardHeader><CardTitle>Summary</CardTitle></CardHeader>
+              <CardContent>
+                <div className="flex justify-between"><span>Subtotal</span><span>{currency} {subtotal.toFixed(2)}</span></div>
+                <div className="flex justify-between items-center mt-2">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">Tax</span>
-                    <div className="w-20">
-                      <Input
-                        type="number"
-                        min="0"
-                        max="100"
-                        value={taxRate}
-                        onChange={(e) => setTaxRate(parseFloat(e.target.value) || 0)}
-                        className="h-8 text-right"
-                      />
-                    </div>
-                    <span className="text-sm">%</span>
+                    <span>Tax</span>
+                    <Input type="number" min={0} max={100} value={taxRate} onChange={(e) => setTaxRate(parseFloat(e.target.value) || 0)} className="w-16 h-8 text-right" />
+                    <span>%</span>
                   </div>
-                  <span className="font-medium">
-                    {currency} {taxAmount.toFixed(2)}
-                  </span>
+                  <span>{currency} {taxAmount.toFixed(2)}</span>
                 </div>
-
-                <div className="border-t pt-4 mt-2">
-                  <div className="flex justify-between font-bold text-lg">
-                    <span>Total</span>
-                    <span>
-                      {currency} {total.toFixed(2)}
-                    </span>
-                  </div>
+                <div className="border-t mt-2 pt-2 flex justify-between font-bold text-lg">
+                  <span>Total</span>
+                  <span>{currency} {total.toFixed(2)}</span>
                 </div>
               </CardContent>
             </Card>
 
             <div className="flex flex-col gap-2">
-              <Button type="submit" size="lg" className="w-full">
-                Save Invoice
-              </Button>
-              <Button type="button" variant="outline" size="lg" className="w-full">
-                Save as Draft
-              </Button>
+              <Button type="submit" size="lg" onClick={handleSubmit}>Save Invoice</Button>
             </div>
           </div>
         </div>

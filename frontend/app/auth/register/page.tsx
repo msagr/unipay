@@ -109,11 +109,19 @@ export default function SignupPage() {
 
   return (
     <div className="container flex h-screen w-screen flex-col items-center justify-center">
-      <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[400px]">
+      <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[400px] relative">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="absolute left-0 top-0"
+          onClick={() => router.push('/')}
+        >
+          <Icons.arrowLeft className="h-4 w-4" />
+        </Button>
         <div className="flex flex-col space-y-2 text-center">
           <h1 className="text-2xl font-semibold tracking-tight">Create an account</h1>
           <p className="text-sm text-muted-foreground">
-            Enter your information to create an account
+            Enter your details to create an account
           </p>
         </div>
         

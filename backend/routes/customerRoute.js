@@ -15,6 +15,8 @@ router.route("/create").post(checkAuth, createCustomer);
 // get all of a users customers at /api/v1/customer/all
 router.route("/all").get(checkAuth, getAllUserCustomers);
 
+// router.route("/:id/amount_due").get(checkAuth, getAmountDue);
+
 // get, update and delete a customer
 router
 	.route("/:id")

@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
-import {
-  Button,
-} from '@/components/ui/button';
+import { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/lib/store'; // adjust this path to your store
+import { Button } from '@/components/ui/button';
 import {
   Table,
   TableHeader,
@@ -30,6 +30,7 @@ import {
   SelectContent,
   SelectItem,
 } from '@/components/ui/select';
+import { useRouter } from 'next/navigation';
 
 interface Customer {
   _id: string;
@@ -39,41 +40,82 @@ interface Customer {
   accountNo: string;
 }
 
-interface Props {
-  customers?: Customer[]; // made optional for safety
-  totalCustomers?: number;
+interface ApiResponse {
+  success: boolean;
+  totalCustomers: number;
+  numberOfPages: number;
+  myCustomers: Customer[];
 }
 
-export default function CustomersPageUI({ customers = [], totalCustomers = 0 }: Props) {
-  const [page, setPage] = useState(0);
+export default function CustomersPageUI() {
+  const router = useRouter();
+  const username = localStorage.getItem("username") || null;
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [totalCustomers, setTotalCustomers] = useState(0);
+  const [numberOfPages, setNumberOfPages] = useState(0);
+  const [page, setPage] = useState(1); // backend pages are 1-indexed
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [deleteCandidate, setDeleteCandidate] = useState<Customer | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const handleDeleteClick = (cust: Customer) => setDeleteCandidate(cust);
   const closeModal = () => setDeleteCandidate(null);
 
-  // ✅ Prevents runtime error if customers is undefined
-  const paginated = (customers ?? []).slice(
-    page * rowsPerPage,
-    page * rowsPerPage + rowsPerPage
-  );
+  // Fetch customers from API
+  useEffect(() => {
+    const fetchCustomers = async () => {
+      if (!username) return;
+
+      try {
+        setLoading(true);
+        const accessKey = localStorage.getItem(username);
+        if (!accessKey) throw new Error('Access key not found');
+
+        const res = await fetch(
+          `http://localhost:3000/api/v1/customer/all?page=${page}`,
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${accessKey}`,
+            },
+          }
+        );
+
+        if (!res.ok) throw new Error('Failed to fetch customers');
+
+        const data: ApiResponse = await res.json();
+        setCustomers(data.myCustomers || []);
+        setTotalCustomers(data.totalCustomers || 0);
+        setNumberOfPages(data.numberOfPages || 1);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCustomers();
+  }, [username, page]);
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Customers</h1>
         <div className="flex items-center space-x-2">
           <span className="text-sm">Total:</span>
           <Badge variant="secondary">{totalCustomers}</Badge>
-          <Button onClick={() => {/* navigate to create */}} variant="default">
+          <Button
+            onClick={() => router.push("/dashboard/customers/create")}
+            variant="default"
+          >
             Create New Customer
           </Button>
         </div>
       </div>
 
-      {/* Table */}
-      {customers.length === 0 ? (
+      {loading ? (
+        <div className="text-center py-10">Loading...</div>
+      ) : customers.length === 0 ? (
         <div className="text-center py-10">
           <p>No customers found.</p>
         </div>
@@ -93,17 +135,15 @@ export default function CustomersPageUI({ customers = [], totalCustomers = 0 }: 
             </TableHeader>
 
             <TableBody>
-              {paginated.map((row, idx) => (
+              {customers.map((row, idx) => (
                 <TableRow key={row._id} className="hover:bg-muted transition">
-                  <TableCell>{page * rowsPerPage + idx + 1}</TableCell>
+                  <TableCell>{(page - 1) * rowsPerPage + idx + 1}</TableCell>
                   <TableCell>{row.name}</TableCell>
                   <TableCell>{row.email}</TableCell>
                   <TableCell>{row.phoneNumber}</TableCell>
                   <TableCell>{row.accountNo}</TableCell>
                   <TableCell>
-                    <Button variant="link" onClick={() => {/* view details logic */}}>
-                      View
-                    </Button>
+                    <Button variant="link" onClick={() => {}}>View</Button>
                   </TableCell>
                   <TableCell>
                     <Button
@@ -122,14 +162,13 @@ export default function CustomersPageUI({ customers = [], totalCustomers = 0 }: 
               <TableRow>
                 <TableCell colSpan={7}>
                   <div className="flex justify-end items-center space-x-4 py-2">
-                    {/* Rows per page */}
                     <div className="flex items-center space-x-2">
                       <span className="text-sm">Rows per page:</span>
                       <Select
                         value={String(rowsPerPage)}
-                        onValueChange={(val) => {
+                        onValueChange={(val: any) => {
                           setRowsPerPage(Number(val));
-                          setPage(0);
+                          setPage(1); // reset to first page
                         }}
                       >
                         <SelectTrigger className="w-20">
@@ -142,19 +181,17 @@ export default function CustomersPageUI({ customers = [], totalCustomers = 0 }: 
                         </SelectContent>
                       </Select>
                     </div>
-
-                    {/* Pagination buttons */}
                     <div className="flex space-x-2">
                       <Button
                         variant="outline"
-                        disabled={page === 0}
+                        disabled={page === 1}
                         onClick={() => setPage((p) => p - 1)}
                       >
                         Previous
                       </Button>
                       <Button
                         variant="outline"
-                        disabled={(page + 1) * rowsPerPage >= customers.length}
+                        disabled={page >= numberOfPages}
                         onClick={() => setPage((p) => p + 1)}
                       >
                         Next
@@ -168,7 +205,6 @@ export default function CustomersPageUI({ customers = [], totalCustomers = 0 }: 
         </ScrollArea>
       )}
 
-      {/* Delete Confirmation Dialog */}
       <Dialog open={!!deleteCandidate} onOpenChange={closeModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -179,9 +215,7 @@ export default function CustomersPageUI({ customers = [], totalCustomers = 0 }: 
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex justify-end space-x-2">
-            <Button variant="ghost" onClick={closeModal}>
-              Cancel
-            </Button>
+            <Button variant="ghost" onClick={closeModal}>Cancel</Button>
             <Button
               variant="destructive"
               onClick={() => {

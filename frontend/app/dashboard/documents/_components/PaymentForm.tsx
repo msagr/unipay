@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
-import { CreditCard, Wallet, Banknote, Smartphone, Plus } from 'lucide-react';
+import { CreditCard, Wallet, Banknote, Smartphone, Calendar as CalendarIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,14 +11,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar as CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/components/ui/use-toast';
 
 type PaymentMethod = {
   value: string;
   label: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: React.ComponentType<{ className?: string }> ;
 };
 
 const paymentMethods: PaymentMethod[] = [
@@ -27,12 +27,15 @@ const paymentMethods: PaymentMethod[] = [
   { value: 'cash', label: 'Cash', icon: Wallet },
 ];
 
+type Customer = {
+  _id: string;
+  name: string;
+};
+
 type PaymentFormProps = {
   document: {
     _id: string;
-    customer: {
-      name: string;
-    };
+    customer: { name: string };
     total: number;
     paymentRecords?: Array<{
       amountPaid: number;
@@ -51,9 +54,44 @@ export function PaymentForm({ document, onSuccess }: PaymentFormProps) {
   const [amount, setAmount] = useState<string>('');
   const [reference, setReference] = useState<string>('');
   const [notes, setNotes] = useState<string>('');
-  const [isProcessing, setIsProcessing] = useState<boolean>(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const router = useRouter();
   const [totalPaid, setTotalPaid] = useState<number>(0);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [selectedCustomer, setSelectedCustomer] = useState<string>('N/A');
+
+  const username = typeof window !== 'undefined' ? localStorage.getItem('username') : null;
   const balance = document.total - totalPaid;
+
+  // Fetch customers
+  useEffect(() => {
+    const fetchCustomers = async () => {
+      if (!username) return;
+      const accessKey = localStorage.getItem(username);
+      if (!accessKey) return;
+
+      try {
+        const res = await fetch('http://localhost:3000/api/v1/customer/all', {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessKey}`,
+          },
+        });
+
+        if (!res.ok) throw new Error('Failed to fetch customers');
+        const data = await res.json();
+        setCustomers(data.myCustomers || []);
+      } catch (err: any) {
+        toast({
+          title: 'Error',
+          description: err.message || 'Failed to fetch customers',
+          variant: 'destructive',
+        });
+      }
+    };
+
+    fetchCustomers();
+  }, [username, toast]);
 
   // Calculate total amount paid
   useEffect(() => {
@@ -68,18 +106,18 @@ export function PaymentForm({ document, onSuccess }: PaymentFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!amount || !method) {
+
+    if (!method) {
       toast({
         title: 'Error',
-        description: 'Please fill in all required fields',
+        description: 'Please select a payment method',
         variant: 'destructive',
       });
       return;
     }
 
-    const paymentAmount = parseFloat(amount);
-    if (isNaN(paymentAmount) || paymentAmount <= 0) {
+    const paymentAmount = selectedCustomer !== 'N/A' ? parseFloat(amount) : 0;
+    if (selectedCustomer !== 'N/A' && (isNaN(paymentAmount) || paymentAmount <= 0)) {
       toast({
         title: 'Error',
         description: 'Please enter a valid payment amount',
@@ -88,36 +126,56 @@ export function PaymentForm({ document, onSuccess }: PaymentFormProps) {
       return;
     }
 
+    const accessKey = username ? localStorage.getItem(username) : null;
+    if (!accessKey) {
+      toast({
+        title: 'Error',
+        description: 'Access token not found. Please login again.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setIsProcessing(true);
 
     try {
-      // TODO: Replace with your actual API call
-      // await createPayment({
-      //   id: document._id,
-      //   paidBy: document.customer.name,
-      //   datePaid: date,
-      //   paymentMethod: method,
-      //   amountPaid: paymentAmount,
-      //   reference,
-      //   notes,
-      // });
+      const res = await fetch(`http://localhost:3000/api/v1/document/${document._id}/payment`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessKey}`,
+        },
+        body: JSON.stringify({
+          datePaid: date,
+          amountPaid: paymentAmount,
+          paymentMethod: method,
+          additionalInfo: {
+            reference,
+            notes,
+            customer: selectedCustomer,
+          },
+        }),
+      });
+
+      if (!res.ok) throw new Error('Failed to record payment');
 
       toast({
         title: 'Success',
         description: 'Payment recorded successfully',
       });
 
-      // Reset form
       setAmount('');
       setReference('');
       setNotes('');
-      
+      setSelectedCustomer('N/A');
+      setMethod('');
+
       if (onSuccess) onSuccess();
-    } catch (error) {
-      console.error('Payment error:', error);
+      router.push("/dashboard/documents");
+    } catch (error: any) {
       toast({
         title: 'Error',
-        description: 'Failed to record payment. Please try again.',
+        description: error.message || 'Failed to record payment',
         variant: 'destructive',
       });
     } finally {
@@ -135,45 +193,40 @@ export function PaymentForm({ document, onSuccess }: PaymentFormProps) {
         </CardHeader>
         <CardContent>
           <div className="grid gap-6">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="invoice-total">Invoice Total</Label>
-                <div className="text-2xl font-bold">
-                  ${document.total.toFixed(2)}
+            {/* <div className="grid grid-cols-2 gap-4">
+
+              
+              {selectedCustomer !== 'N/A' && (
+                <div className="space-y-2">
+                  <Label>Amount Due</Label>
+                  <div className="text-2xl font-bold">${balance.toFixed(2)}</div>
                 </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="amount-due">Amount Due</Label>
-                <div className="text-2xl font-bold">
-                  ${balance.toFixed(2)}
-                </div>
-              </div>
-            </div>
+              )}
+            </div> */}
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="amount">Amount *</Label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-2.5 text-muted-foreground">$</span>
-                    <Input
-                      id="amount"
-                      type="number"
-                      step="0.01"
-                      min="0.01"
-                      max={balance}
-                      value={amount}
-                      onChange={(e) => setAmount(e.target.value)}
-                      className="pl-8"
-                      placeholder="0.00"
-                      required
-                    />
+                {/* Amount field visible even if N/A is selected */}
+                  <div className="space-y-2">
+                    <Label htmlFor="amount">Amount *</Label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-2.5 text-muted-foreground">$</span>
+                      <Input
+                        id="amount"
+                        type="number"
+                        step="0.01"
+                        min="0.01"
+                        value={amount}
+                        onChange={(e) => setAmount(e.target.value)}
+                        className="pl-8"
+                        placeholder="0.00"
+                        required
+                      />
+                    </div>
+                    {/* <p className="text-xs text-muted-foreground">Maximum: ${balance.toFixed(2)}</p> */}
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    Maximum: ${balance.toFixed(2)}
-                  </p>
-                </div>
 
+                {/* Payment Date */}
                 <div className="space-y-2">
                   <Label htmlFor="date">Payment Date *</Label>
                   <Popover>
@@ -201,6 +254,25 @@ export function PaymentForm({ document, onSuccess }: PaymentFormProps) {
                 </div>
               </div>
 
+              {/* Customer Dropdown */}
+              <div className="space-y-2">
+                <Label htmlFor="customer">Customer</Label>
+                <Select value={selectedCustomer} onValueChange={setSelectedCustomer}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a customer" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="N/A">N/A</SelectItem>
+                    {customers.map((c) => (
+                      <SelectItem key={c._id} value={c.name}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Payment Method */}
               <div className="space-y-2">
                 <Label htmlFor="method">Payment Method *</Label>
                 <Select value={method} onValueChange={setMethod}>
@@ -217,13 +289,13 @@ export function PaymentForm({ document, onSuccess }: PaymentFormProps) {
                     </div>
                   </SelectTrigger>
                   <SelectContent>
-                    {paymentMethods.map((method) => {
-                      const Icon = method.icon;
+                    {paymentMethods.map((m) => {
+                      const Icon = m.icon;
                       return (
-                        <SelectItem key={method.value} value={method.value}>
+                        <SelectItem key={m.value} value={m.value}>
                           <div className="flex items-center">
                             <Icon className="mr-2 h-4 w-4" />
-                            {method.label}
+                            {m.label}
                           </div>
                         </SelectItem>
                       );
@@ -232,6 +304,7 @@ export function PaymentForm({ document, onSuccess }: PaymentFormProps) {
                 </Select>
               </div>
 
+              {/* Reference & Notes */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="reference">Reference/Transaction ID</Label>
@@ -246,12 +319,7 @@ export function PaymentForm({ document, onSuccess }: PaymentFormProps) {
                 {method === 'credit_card' && (
                   <div className="space-y-2">
                     <Label htmlFor="lastFour">Last 4 Digits</Label>
-                    <Input
-                      id="lastFour"
-                      maxLength={4}
-                      placeholder="1234"
-                      className="w-24"
-                    />
+                    <Input id="lastFour" maxLength={4} placeholder="1234" className="w-24" />
                   </div>
                 )}
               </div>
@@ -263,17 +331,17 @@ export function PaymentForm({ document, onSuccess }: PaymentFormProps) {
                   rows={3}
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   placeholder="Add any additional notes about this payment"
                 />
               </div>
 
               <div className="pt-4">
-                <Button 
-                  type="submit" 
-                  className="w-full" 
+                <Button
+                  type="submit"
+                  className="w-full"
                   size="lg"
-                  disabled={isProcessing || !amount || !method}
+                  disabled={isProcessing || (!amount && selectedCustomer !== 'N/A') || !method}
                 >
                   {isProcessing ? 'Processing...' : 'Record Payment'}
                 </Button>
@@ -293,22 +361,14 @@ export function PaymentForm({ document, onSuccess }: PaymentFormProps) {
               {document.paymentRecords?.map((record, index) => (
                 <div key={index} className="flex items-center justify-between border-b pb-2">
                   <div>
-                    <p className="font-medium">
-                      ${Number(record.amountPaid).toFixed(2)}
-                    </p>
+                    <p className="font-medium">${Number(record.amountPaid).toFixed(2)}</p>
                     <p className="text-sm text-muted-foreground">
                       {format(new Date(record.datePaid || new Date()), 'PPP')}
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-medium">
-                      {record.paymentMethod}
-                    </p>
-                    {record.reference && (
-                      <p className="text-xs text-muted-foreground">
-                        Ref: {record.reference}
-                      </p>
-                    )}
+                    <p className="text-sm font-medium">{record.paymentMethod}</p>
+                    {record.reference && <p className="text-xs text-muted-foreground">Ref: {record.reference}</p>}
                   </div>
                 </div>
               ))}

@@ -1,21 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { DocumentType } from "../_components/documentType";
 import { toast } from "sonner";
-import { 
-  FileText, 
-  Plus, 
-  Trash2, 
-  Eye, 
-  ArrowLeft, 
-  ArrowRight,
+import {
+  Plus,
+  Trash2,
+  Eye,
   ChevronLeft,
   ChevronRight,
   Search,
-  X
+  X,
+  Loader2
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -23,15 +21,13 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { 
-  Pagination, 
-  PaginationContent, 
-  PaginationItem, 
-  PaginationLink, 
-  PaginationNext, 
-  PaginationPrevious 
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
 } from "@/components/ui/pagination";
-import { 
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -42,102 +38,112 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-// Mock data - replace with your actual data fetching
-const mockDocuments = [
-  {
-    _id: "1",
-    documentNumber: "INV-2023-001",
-    documentType: "Invoice",
-    customer: { name: "John Doe" },
-    total: 1250.00,
-    dueDate: new Date("2023-11-15"),
-    status: "unpaid"
-  },
-  {
-    _id: "2",
-    documentNumber: "INV-2023-002",
-    documentType: "Invoice",
-    customer: { name: "Jane Smith" },
-    total: 850.50,
-    dueDate: new Date("2023-11-20"),
-    status: "paid"
-  },
-  {
-    _id: "3",
-    documentNumber: "EST-2023-001",
-    documentType: "Receipt",
-    customer: { name: "Acme Corp" },
-    total: 2200.00,
-    dueDate: new Date("2023-12-01"),
-    status: "pending"
-  },
-];
-
 export default function DocumentsPage() {
   const router = useRouter();
-  const [documents] = useState(mockDocuments);
+  const [documents, setDocuments] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [documentsPerPage] = useState(5);
+  const [rowsPerPage] = useState(5);
+  const [numberOfPages, setNumberOfPages] = useState(1);
+
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [documentToDelete, setDocumentToDelete] = useState<string | null>(null);
   const [showDocumentTypeSelector, setShowDocumentTypeSelector] = useState(false);
-  const [selectedDocumentType, setSelectedDocumentType] = useState('');
 
-  // Filter documents based on search term
-  const filteredDocuments = documents.filter(doc =>
-    doc.documentNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    doc.customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    doc.documentType.toLowerCase().includes(searchTerm.toLowerCase())
+  const username = typeof window !== "undefined" ? localStorage.getItem("username") : null;
+
+  // 🔹 Fetch documents from backend
+  useEffect(() => {
+    const fetchDocuments = async () => {
+      if (!username) return;
+
+      try {
+        setLoading(true);
+        const accessKey = localStorage.getItem(username);
+        if (!accessKey) throw new Error("Access key not found");
+
+        const res = await fetch(
+          `http://localhost:3000/api/v1/document/all?page=${currentPage}`,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${accessKey}`,
+            },
+          }
+        );
+
+        if (!res.ok) throw new Error("Failed to fetch documents");
+
+        const data = await res.json();
+        setDocuments(data.myDocuments || []);
+        setNumberOfPages(data.numberOfPages || 1);
+      } catch (err: any) {
+        toast.error(err.message || "Error fetching documents");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDocuments();
+  }, [currentPage, username]);
+
+  // 🔹 Filter documents based on search term (client-side)
+  const filteredDocuments = documents.filter((doc) =>
+    doc.documentNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    doc.customer?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    doc.documentType?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Get current documents
-  const indexOfLastDoc = currentPage * documentsPerPage;
-  const indexOfFirstDoc = indexOfLastDoc - documentsPerPage;
-  const currentDocuments = filteredDocuments.slice(indexOfFirstDoc, indexOfLastDoc);
-  const totalPages = Math.ceil(filteredDocuments.length / documentsPerPage);
-
-  // Change page
-  const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
-
-  // Handle document deletion
-  const handleDeleteClick = (doc: typeof mockDocuments[0]) => {
+  // 🔹 Handle delete
+  const handleDeleteClick = (doc: any) => {
     setDocumentToDelete(doc._id);
     setIsDeleteDialogOpen(true);
   };
-  
-  // Get the document being deleted for display
-  const documentToDeleteObj = documents.find(doc => doc._id === documentToDelete);
 
-  const confirmDelete = () => {
-    // TODO: Implement actual delete logic with your API
-    toast.success(`Document ${documentToDelete} deleted`);
-    setIsDeleteDialogOpen(false);
-  };
+  const confirmDelete = async () => {
+    try {
+      const accessKey = username ? localStorage.getItem(username) : null;
+      if (!accessKey) throw new Error("Access key not found");
 
-  // Status badge styling
-  const getStatusBadgeVariant = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'paid':
-        return 'default';  // Using default (primary color) for paid status
-      case 'unpaid':
-        return 'destructive';
-      case 'pending':
-        return 'secondary';
-      default:
-        return 'outline';
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/document/${documentToDelete}`,
+        {
+          method: "DELETE",
+          headers: {
+            "Authorization": `Bearer ${accessKey}`,
+          },
+        }
+      );
+
+      if (!res.ok) throw new Error("Failed to delete document");
+
+      toast.success("Document deleted successfully");
+      setDocuments((prev) => prev.filter((d) => d._id !== documentToDelete));
+    } catch (error: any) {
+      toast.error(error.message);
+    } finally {
+      setIsDeleteDialogOpen(false);
     }
   };
 
-  // Document type styling
+  // 🔹 Status badge styling
+  const getStatusBadgeVariant = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case "paid": return "default";
+      case "not fully paid": return "secondary";
+      case "not paid": return "destructive";
+      default: return "outline";
+    }
+  };
+
+  // 🔹 Document type badge styling
   const getDocumentTypeVariant = (type: string) => {
-    switch (type.toLowerCase()) {
-      case 'invoice':
-        return 'default';
-      case 'estimate':
-        return 'outline';
-      default:
-        return 'secondary';
+    switch (type?.toLowerCase()) {
+      case "invoice": return "default";
+      case "quotation": return "secondary";
+      case "receipt": return "outline";
+      default: return "secondary";
     }
   };
 
@@ -146,19 +152,19 @@ export default function DocumentsPage() {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold tracking-tight">Documents</h1>
-          <Button 
+          <Button
             onClick={() => setShowDocumentTypeSelector(!showDocumentTypeSelector)}
-            variant={showDocumentTypeSelector ? 'outline' : 'default'}
+            variant={showDocumentTypeSelector ? "outline" : "default"}
           >
             {showDocumentTypeSelector ? (
               <X className="mr-2 h-4 w-4" />
             ) : (
               <Plus className="mr-2 h-4 w-4" />
             )}
-            {showDocumentTypeSelector ? 'Cancel' : 'New Document'}
+            {showDocumentTypeSelector ? "Cancel" : "New Document"}
           </Button>
         </div>
-        
+
         {showDocumentTypeSelector && (
           <Card>
             <CardHeader>
@@ -166,11 +172,10 @@ export default function DocumentsPage() {
               <CardDescription>Select a document type to get started</CardDescription>
             </CardHeader>
             <CardContent>
-              <DocumentType 
+              <DocumentType
                 onSelect={(type) => {
-                  setSelectedDocumentType(type);
                   router.push(`/dashboard/documents/new?type=${type}`);
-                }} 
+                }}
               />
             </CardContent>
           </Card>
@@ -182,9 +187,7 @@ export default function DocumentsPage() {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between">
             <div>
               <CardTitle>Document List</CardTitle>
-              <CardDescription>
-                View and manage all your documents
-              </CardDescription>
+              <CardDescription>View and manage all your documents</CardDescription>
             </div>
             <div className="relative mt-4 md:mt-0">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -198,125 +201,124 @@ export default function DocumentsPage() {
             </div>
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Document #</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Customer</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Due Date</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="w-[100px]">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {currentDocuments.length > 0 ? (
-                  currentDocuments.map((doc) => (
-                    <TableRow key={doc._id}>
-                      <TableCell className="font-medium">
-                        {doc.documentNumber}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={getDocumentTypeVariant(doc.documentType)}>
-                          {doc.documentType}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{doc.customer.name}</TableCell>
-                      <TableCell>${doc.total.toFixed(2)}</TableCell>
-                      <TableCell>{format(doc.dueDate, 'MMM d, yyyy')}</TableCell>
-                      <TableCell>
-                        <Badge variant={getStatusBadgeVariant(doc.status)}>
-                          {doc.status.charAt(0).toUpperCase() + doc.status.slice(1)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="flex space-x-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => router.push(`/dashboard/documents/${doc._id}`)}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-destructive hover:text-destructive/80"
-                          onClick={() => handleDeleteClick(doc)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={7} className="h-24 text-center">
-                      No documents found
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
 
-          {totalPages > 1 && (
-            <div className="mt-4 flex items-center justify-end space-x-2">
-              <Pagination>
-                <PaginationContent>
-                  <PaginationItem>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setCurrentPage(p => Math.max(p - 1, 1))}
-                      disabled={currentPage === 1}
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                  </PaginationItem>
-                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                    // Show page numbers with some logic to handle many pages
-                    let pageNum;
-                    if (totalPages <= 5) {
-                      pageNum = i + 1;
-                    } else if (currentPage <= 3) {
-                      pageNum = i + 1;
-                    } else if (currentPage >= totalPages - 2) {
-                      pageNum = totalPages - 4 + i;
-                    } else {
-                      pageNum = currentPage - 2 + i;
-                    }
-                    
-                    return (
-                      <PaginationItem key={pageNum}>
-                        <PaginationLink
-                          href="#"
-                          isActive={currentPage === pageNum}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            paginate(pageNum);
-                          }}
-                        >
-                          {pageNum}
-                        </PaginationLink>
-                      </PaginationItem>
-                    );
-                  })}
-                  <PaginationItem>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))}
-                      disabled={currentPage === totalPages}
-                    >
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
-                  </PaginationItem>
-                </PaginationContent>
-              </Pagination>
+        <CardContent>
+          {loading ? (
+            <div className="flex items-center justify-center h-48">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
+          ) : (
+            <>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Document #</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Customer</TableHead>
+                      <TableHead>Amount</TableHead>
+                      <TableHead>Due Date</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="w-[100px]">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredDocuments.length > 0 ? (
+                      filteredDocuments.map((doc) => (
+                        <TableRow key={doc._id}>
+                          <TableCell className="font-medium">{doc.documentNumber}</TableCell>
+                          <TableCell>
+                            <Badge variant={getDocumentTypeVariant(doc.documentType)}>
+                              {doc.documentType}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{doc.customer?.name || "-"}</TableCell>
+                          <TableCell>
+                            {doc.currency || "$"} {Number(doc.total || 0).toFixed(2)}
+                          </TableCell>
+                          <TableCell>
+                            {doc.dueDate ? format(new Date(doc.dueDate), "MMM d, yyyy") : "-"}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={getStatusBadgeVariant(doc.status)}>
+                              {doc.status || "-"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="flex space-x-2">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => router.push(`/dashboard/documents/${doc._id}`)}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-destructive hover:text-destructive/80"
+                              onClick={() => handleDeleteClick(doc)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={7} className="h-24 text-center">
+                          No documents found
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {numberOfPages > 1 && (
+                <div className="mt-4 flex items-center justify-end space-x-2">
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                          disabled={currentPage === 1}
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                      </PaginationItem>
+
+                      {Array.from({ length: numberOfPages }, (_, i) => (
+                        <PaginationItem key={i + 1}>
+                          <PaginationLink
+                            href="#"
+                            isActive={currentPage === i + 1}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              setCurrentPage(i + 1);
+                            }}
+                          >
+                            {i + 1}
+                          </PaginationLink>
+                        </PaginationItem>
+                      ))}
+
+                      <PaginationItem>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage((p) => Math.min(p + 1, numberOfPages))}
+                          disabled={currentPage === numberOfPages}
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                </div>
+              )}
+            </>
           )}
         </CardContent>
       </Card>
@@ -327,13 +329,12 @@ export default function DocumentsPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the document
-              {documentToDeleteObj && ` ${documentToDeleteObj.documentNumber}`}.
+              This action cannot be undone. This will permanently delete this document.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={confirmDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >

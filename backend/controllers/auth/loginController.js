@@ -72,7 +72,7 @@ const loginUser = asyncHandler(async (req, res) => {
 
 			const options = {
 				httpOnly: true,
-				maxAge: 24 * 60 * 60 * 1000,
+				maxAge: 24 * 60 * 60 * 10000,
 				secure: true,
 				sameSite: "None",
 			};
@@ -85,12 +85,14 @@ const loginUser = asyncHandler(async (req, res) => {
 
 		const options = {
 			httpOnly: true,
-			maxAge: 24 * 60 * 60 * 1000,
+			maxAge: 24 * 60 * 60 * 10000,
 			secure: true,
 			sameSite: "None",
 		};
 
 		res.cookie("jwt", newRefreshToken, options);
+
+		const uniqueIdentifier = existingUser._id.toString();
 
 		res.json({
 			success: true,
