@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
+import { DocumentType } from "../_components/documentType";
 import { toast } from "sonner";
 import { 
   FileText, 
@@ -13,7 +14,8 @@ import {
   ArrowRight,
   ChevronLeft,
   ChevronRight,
-  Search
+  Search,
+  X
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -78,7 +80,9 @@ export default function DocumentsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [documentsPerPage] = useState(5);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [selectedDoc, setSelectedDoc] = useState<typeof mockDocuments[0] | null>(null);
+  const [documentToDelete, setDocumentToDelete] = useState<string | null>(null);
+  const [showDocumentTypeSelector, setShowDocumentTypeSelector] = useState(false);
+  const [selectedDocumentType, setSelectedDocumentType] = useState('');
 
   // Filter documents based on search term
   const filteredDocuments = documents.filter(doc =>
@@ -98,13 +102,16 @@ export default function DocumentsPage() {
 
   // Handle document deletion
   const handleDeleteClick = (doc: typeof mockDocuments[0]) => {
-    setSelectedDoc(doc);
+    setDocumentToDelete(doc._id);
     setIsDeleteDialogOpen(true);
   };
+  
+  // Get the document being deleted for display
+  const documentToDeleteObj = documents.find(doc => doc._id === documentToDelete);
 
   const confirmDelete = () => {
     // TODO: Implement actual delete logic with your API
-    toast.success(`Document ${selectedDoc?.documentNumber} deleted`);
+    toast.success(`Document ${documentToDelete} deleted`);
     setIsDeleteDialogOpen(false);
   };
 
@@ -136,20 +143,38 @@ export default function DocumentsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Documents</h1>
-          <p className="text-muted-foreground">
-            Manage your invoices, estimates, and other documents
-          </p>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold tracking-tight">Documents</h1>
+          <Button 
+            onClick={() => setShowDocumentTypeSelector(!showDocumentTypeSelector)}
+            variant={showDocumentTypeSelector ? 'outline' : 'default'}
+          >
+            {showDocumentTypeSelector ? (
+              <X className="mr-2 h-4 w-4" />
+            ) : (
+              <Plus className="mr-2 h-4 w-4" />
+            )}
+            {showDocumentTypeSelector ? 'Cancel' : 'New Document'}
+          </Button>
         </div>
-        <Button 
-          className="mt-4 md:mt-0"
-          onClick={() => router.push('/dashboard/documents/new')}
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          New Document
-        </Button>
+        
+        {showDocumentTypeSelector && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Create New Document</CardTitle>
+              <CardDescription>Select a document type to get started</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <DocumentType 
+                onSelect={(type) => {
+                  setSelectedDocumentType(type);
+                  router.push(`/dashboard/documents/new?type=${type}`);
+                }} 
+              />
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       <Card>
@@ -303,7 +328,7 @@ export default function DocumentsPage() {
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
               This action cannot be undone. This will permanently delete the document
-              {selectedDoc && ` ${selectedDoc.documentNumber}`}.
+              {documentToDeleteObj && ` ${documentToDeleteObj.documentNumber}`}.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
