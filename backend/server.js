@@ -9,6 +9,7 @@ import authRoutes from "./routes/authRoutes.js";
 import { sanitizeRequest } from "./middleware/sanitizeMiddleware.js";
 import userRoutes from "./routes/userRoutes.js";
 import { apiLimiter } from "./middleware/apiLimiter.js";
+import cors from "cors";
 
 dotenv.config();
 
@@ -19,6 +20,13 @@ const app = express();
 if (process.env.NODE_ENV === 'development') {
     app.use(morgan("dev"));
 }
+
+app.use(
+  cors({
+    origin: ["http://localhost:4000", "http://localhost:8080"], // allowed origins
+    credentials: true, // allow cookies/auth headers if needed
+  })
+);
 
 app.use(express.json());
 app.use(express.urlencoded({extended: false}));

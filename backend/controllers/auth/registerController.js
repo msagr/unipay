@@ -22,38 +22,48 @@ const registerUser = asyncHandler(async (req, res) => {
     	? incomingRoles
     	: [incomingRoles];
 
+	if (!username) {
+		return res.status(400).json({
+			success: false,
+			message: "A username is required",
+		});
+	}
+	
 	if (!email) {
-		res.status(400);
-		throw new Error("An email address is required");
+		return res.status(400).json({
+			success: false,
+			message: "An email address is required",
+		});
 	}
 
-	if (!username) {
-		res.status(400);
-		throw new Error("A username is required");
-	}
 	if (!firstName || !lastName) {
-		res.status(400);
-		throw new Error(
-			"You must enter a full name with a first and last name"
-		);
+		return res.status(400).json({
+			success: false,
+			message: "You must enter a full name with a first and last name",
+		});
 	}
 
 	if (!password) {
-		res.status(400);
-		throw new Error("You must enter a password");
+		return res.status(400).json({
+			success: false,
+			message: "You must enter a password",
+		});
 	}
+
 	if (!passwordConfirm) {
-		res.status(400);
-		throw new Error("Confirm password field is required");
+		return res.status(400).json({
+			success: false,
+			message: "Confirm password field is required",
+		});
 	}
 
 	const userExists = await User.findOne({ email });
 
 	if (userExists) {
-		res.status(400);
-		throw new Error(
-			"The email address you've entered is already associated with another account"
-		);
+		return res.status(400).json({
+			success: false,
+			message: "The email address you've entered is already associated with another account",
+		});
 	}
 
 	const newUser = new User({
@@ -69,8 +79,10 @@ const registerUser = asyncHandler(async (req, res) => {
 	const registeredUser = await newUser.save();
 
 	if (!registeredUser) {
-		res.status(400);
-		throw new Error("User could not be registered");
+		return res.status(400).json({
+			success: false,
+			message: "User could not be registered. Please try again.",
+		});
 	}
 
 	if (registeredUser) {
@@ -98,7 +110,7 @@ const registerUser = asyncHandler(async (req, res) => {
 			"./emails/template/accountVerification.handlebars"
 		);
 
-		res.json({
+		return res.status(201).json({
 			success: true,
 			message: `A new user ${registeredUser.firstName} has been registered! A Verification email has been sent to your account. Please verify within 15 minutes`,
 		});

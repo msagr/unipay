@@ -7,29 +7,33 @@ const loginUser = asyncHandler(async (req, res) => {
 	const { email, password } = req.body;
 
 	if (!email || !password) {
-		res.status(400);
-		throw new Error("Please provide an email and password");
+		return res.status(400).json({
+			success: false,
+			message: "Please provide an email and password"
+		});
 	}
 
 	const existingUser = await User.findOne({ email }).select("+password");
 
 	if (!existingUser || !(await existingUser.comparePassword(password))) {
-		res.status(401);
-		throw new Error("Incorrect email or password");
+		return res.status(401).json({
+			success: false,
+			message: "Incorrect email or password"
+		});
 	}
 
 	if (!existingUser.isEmailVerified) {
-		res.status(400);
-		throw new Error(
-			"You are not verified. Check your email, a verification email link was sent when you registered"
-		);
+		return res.status(400).json({
+			success: false,
+			message: "You are not verified. Check your email, a verification email link was sent when you registered"
+		});
 	}
 
 	if (!existingUser.active) {
-		res.status(400);
-		throw new Error(
-			"You have been deactivated by the admin and login is impossible. Contact us for enquiries"
-		);
+		return res.status(400).json({
+			success: false,
+			message: "You have been deactivated by the admin and login is impossible. Contact us for enquiries"
+		});
 	}
 
 	if (existingUser && (await existingUser.comparePassword(password))) {

@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from 'react';
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -11,21 +12,26 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Icons } from "@/components/icons";
 import { cn } from "@/lib/utils";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import React from "react";
 
-const loginSchema = z.object({
-  email: z.email("Please enter a valid email address"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
-  rememberMe: z.boolean().optional(),
-});
-
-type LoginFormValues = z.infer<typeof loginSchema>;
-
-export default function LoginPage() {
-  const router = useRouter();
+// Wrapper component that uses useSearchParams
+function LoginFormWrapper() {
   const searchParams = useSearchParams();
-  const { toast } = useToast();
+  return <LoginForm searchParams={searchParams} />;
+}
+
+// Main login form component that receives searchParams as a prop
+function LoginForm({ searchParams }: { searchParams: URLSearchParams }) {
+  const router = useRouter();
+  
+  const loginSchema = z.object({
+    email: z.email("Please enter a valid email address"),
+    password: z.string().min(8, "Password must be at least 8 characters"),
+    rememberMe: z.boolean().optional(),
+  });
+
+  type LoginFormValues = z.infer<typeof loginSchema>;
   
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -43,28 +49,26 @@ export default function LoginPage() {
     setIsLoading(true);
     
     try {
-      // TODO: Replace with your actual authentication logic
-      console.log("Login data:", data);
+      const response = await fetch("http://localhost:3000/api/v1/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });      
+
+      const result = await response.json();
+      console.log('Result:', result);
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      if(!result.success) {
+        toast.error(`${result?.message || "Something went wrong"}`);
+        return;
+      }
       
-      // On successful login
-      toast({
-        title: "Login successful",
-        description: "Redirecting to your dashboard...",
-      });
-      
-      // Redirect to dashboard or return URL
-      const redirectTo = searchParams.get("from") || "/dashboard";
+      // Redirect to dashboard or return URL using the searchParams prop
+      const redirectTo = searchParams?.get("redirectTo") || "/dashboard";
       router.push(redirectTo);
       
     } catch (error) {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Something went wrong",
-        variant: "destructive",
-      });
+      toast.error(`${error || "Something went wrong"}`);
     } finally {
       setIsLoading(false);
     }
@@ -213,5 +217,14 @@ export default function LoginPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+// Main page component that wraps everything in Suspense
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center">Loading...</div>}>
+      <LoginFormWrapper />
+    </Suspense>
   );
 }
