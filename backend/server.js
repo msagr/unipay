@@ -10,6 +10,7 @@ import { sanitizeRequest } from "./middleware/sanitizeMiddleware.js";
 import userRoutes from "./routes/userRoutes.js";
 import { apiLimiter } from "./middleware/apiLimiter.js";
 import customerRoutes from "./routes/customerRoute.js";
+import documentRoutes from "./routes/documentRoutes.js";
 import cors from "cors";
 
 dotenv.config();
@@ -42,6 +43,7 @@ app.get("/api/v1/test", (req, res) => {
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/user", apiLimiter, userRoutes);
 app.use("/api/v1/customer", apiLimiter, customerRoutes);
+app.use("/api/v1/document", apiLimiter, documentRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
