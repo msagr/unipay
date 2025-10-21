@@ -24,10 +24,10 @@ export function Navbar() {
         </nav> */}
         <div className="flex items-center space-x-3 sm:space-x-4">
           <Button asChild variant="outline">
-            <Link href="/login">Login</Link>
+            <Link href="/auth/login">Login</Link>
           </Button>
           <Button asChild>
-            <Link href="/signup">Get Started</Link>
+            <Link href="/auth/register">Get Started</Link>
           </Button>
         </div>
       </div>
