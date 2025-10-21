@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
-import { ArrowLeft } from "lucide-react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
@@ -41,7 +40,6 @@ type ProfileFormValues = z.infer<typeof profileFormSchema>;
 type PasswordFormValues = z.infer<typeof passwordFormSchema>;
 
 export default function SettingsPage() {
-  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("profile");
   
@@ -117,16 +115,7 @@ export default function SettingsPage() {
     <div className="container mx-auto py-8 px-4 max-w-6xl">
       <div className="space-y-6">
         <div>
-          <div className="flex items-center gap-4">
-            <button 
-              onClick={() => router.push('/dashboard')}
-              className="text-muted-foreground hover:text-foreground transition-colors"
-              aria-label="Back to dashboard"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </button>
-            <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-          </div>
+          <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
           <p className="text-muted-foreground mt-1">Manage your account settings and preferences.</p>
         </div>
 

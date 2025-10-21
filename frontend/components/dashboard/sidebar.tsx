@@ -6,7 +6,14 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { PanelLeft, Home, Users, FileText, CreditCard, Settings, Menu } from 'lucide-react';
+import {
+  Menu,
+  Home,
+  Users,
+  FileText,
+  CreditCard,
+  Settings,
+} from 'lucide-react';
 
 const navItems = [
   {
@@ -20,8 +27,8 @@ const navItems = [
     icon: Users,
   },
   {
-    name: 'Invoices',
-    href: '/dashboard/invoices',
+    name: 'Documents',
+    href: '/dashboard/documents',
     icon: FileText,
   },
   {
@@ -39,40 +46,32 @@ const navItems = [
 export function Sidebar() {
   const pathname = usePathname();
 
-
   return (
-    <div className="hidden border-r bg-muted/40 md:block">
-      <div className="flex h-full max-h-screen flex-col gap-2">
-        <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
-          <Link href="/" className="flex items-center gap-2 font-semibold">
-            <PanelLeft className="h-6 w-6" />
-            <span className="text-lg">UniPay</span>
-          </Link>
-        </div>
-        <ScrollArea className="flex-1 px-3 py-2">
-          <nav className="grid items-start gap-2">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-foreground',
-                  pathname === item.href ? 'bg-muted text-foreground' : ''
-                )}
-              >
-                <item.icon className="h-4 w-4" />
-                {item.name}
-              </Link>
-            ))}
-          </nav>
-        </ScrollArea>
-      </div>
+    <div className="hidden md:flex w-64 flex-col border-r bg-muted/40 overflow-hidden">
+      <ScrollArea className="flex-1">
+        <nav className="flex flex-col gap-2 p-3 pr-4">
+          {navItems.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-foreground whitespace-nowrap',
+                pathname === item.href ? 'bg-muted text-foreground' : ''
+              )}
+            >
+              <item.icon className="h-4 w-4 shrink-0" />
+              <span className="truncate">{item.name}</span>
+            </Link>
+          ))}
+        </nav>
+      </ScrollArea>
     </div>
   );
 }
 
 export function MobileSidebar() {
   const pathname = usePathname();
+
   return (
     <Sheet>
       <SheetTrigger asChild>
@@ -81,26 +80,25 @@ export function MobileSidebar() {
           <span className="sr-only">Toggle navigation menu</span>
         </Button>
       </SheetTrigger>
-      <SheetContent side="left" className="flex flex-col p-0">
-        <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
-          <Link href="/" className="flex items-center gap-2 font-semibold">
-            <PanelLeft className="h-6 w-6" />
-            <span className="text-lg">UniPay</span>
-          </Link>
+      <SheetContent side="left" className="flex flex-col p-0 w-64">
+        {/* Optional Header */}
+        <div className="px-4 py-6 border-b">
+          <h2 className="text-lg font-semibold">UniPay</h2>
         </div>
-        <ScrollArea className="flex-1 px-3 py-2">
-          <nav className="grid items-start gap-2">
+
+        <ScrollArea className="flex-1 px-3 py-4">
+          <nav className="grid items-start gap-2 pr-1">
             {navItems.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-foreground',
+                  'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-foreground whitespace-nowrap',
                   pathname === item.href ? 'bg-muted text-foreground' : ''
                 )}
               >
-                <item.icon className="h-4 w-4" />
-                {item.name}
+                <item.icon className="h-4 w-4 shrink-0" />
+                <span className="truncate">{item.name}</span>
               </Link>
             ))}
           </nav>

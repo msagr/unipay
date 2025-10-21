@@ -16,7 +16,6 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import PaymentHistory from './_components/paymentHistory';
-import { Sidebar, MobileSidebar } from '@/components/dashboard/sidebar';
 
 // Mock data - Replace with your actual data fetching logic
 const mockPayments = [
@@ -115,149 +114,133 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden">
-      <Sidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="flex h-14 items-center gap-4 border-b bg-background px-4 lg:h-[60px] lg:px-6">
-          <MobileSidebar />
-          <div className="flex-1">
-            <h1 className="text-lg font-semibold">Dashboard</h1>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={handleRefresh}
-              disabled={isRefreshing}
-              className="gap-2"
-            >
-              <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-              <span className="hidden sm:inline">Refresh</span>
-            </Button>
-            <Button size="sm" className="gap-2">
-              <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">New Payment</span>
-            </Button>
-          </div>
-        </header>
-        <main className="flex-1 overflow-y-auto p-4 md:p-6">
-          <div className="space-y-6">
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">Dashboard</h1>
+        <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isRefreshing}>
+          {isRefreshing ? (
+            <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+          ) : (
+            <RefreshCw className="w-4 h-4 mr-2" />
+          )}
+          Refresh
+        </Button>
+      </div>
+      <div className="space-y-6">
+        {/* Stats Grid */}
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+          {stats.map((stat, index) => (
+            <Card key={index} className="hover:shadow-md transition-shadow">
+              <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  {stat.title}
+                </CardTitle>
+                <div className="p-2 rounded-md bg-primary/10">
+                  {stat.icon}
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stat.value}</div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  <span className={stat.changeType === 'increase' ? 'text-green-500' : 'text-red-500'}>
+                    {stat.change} {stat.changeType === 'increase' ? '↑' : '↓'}
+                  </span>{' '}
+                  from last month
+                </p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
 
-      {/* Stats Grid */}
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat, index) => (
-          <Card key={index} className="hover:shadow-md transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                {stat.title}
-              </CardTitle>
-              <div className="p-2 rounded-md bg-primary/10">
-                {stat.icon}
+        {/* Status Overview */}
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+          {statuses.map((status, index) => (
+            <Card key={index} className="hover:shadow-md transition-shadow">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  {status.title}
+                </CardTitle>
+                {status.icon}
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{status.value}</div>
+                <p className="text-xs text-muted-foreground">
+                  {status.description}
+                </p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Recent Transactions */}
+        <Card className="overflow-hidden">
+          <CardHeader className="bg-muted/50">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div>
+                <CardTitle className="text-xl font-semibold">Recent Transactions</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  View and manage your payment transactions
+                </p>
               </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                <span className={stat.changeType === 'increase' ? 'text-green-500' : 'text-red-500'}>
-                  {stat.change} {stat.changeType === 'increase' ? '↑' : '↓'}
-                </span>{' '}
-                from last month
-              </p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Status Overview */}
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-        {statuses.map((status, index) => (
-          <Card key={index} className="hover:shadow-md transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                {status.title}
-              </CardTitle>
-              {status.icon}
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{status.value}</div>
-              <p className="text-xs text-muted-foreground">
-                {status.description}
-              </p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Recent Transactions */}
-      <Card className="overflow-hidden">
-        <CardHeader className="bg-muted/50">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
-              <CardTitle className="text-xl font-semibold">Recent Transactions</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                View and manage your payment transactions
-              </p>
+              <Button variant="outline" size="sm" className="gap-2">
+                View All
+                <ArrowUpRight className="h-4 w-4" />
+              </Button>
             </div>
-            <Button variant="outline" size="sm" className="gap-2">
-              View All
-              <ArrowUpRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="p-0">
-          <PaymentHistory payments={mockPayments} isLoading={false} itemsPerPage={5} />
-        </CardContent>
-      </Card>
-
-      {/* Quick Actions */}
-      <div className="grid gap-4 grid-cols-1 lg:grid-cols-3">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Quick Actions</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
-            <Button variant="outline" className="w-full justify-start gap-2">
-              <Plus className="h-4 w-4" />
-              Create New Invoice
-            </Button>
-            <Button variant="outline" className="w-full justify-start gap-2">
-              <Users className="h-4 w-4" />
-              Add New Customer
-            </Button>
-            <Button variant="outline" className="w-full justify-start gap-2">
-              <DollarSign className="h-4 w-4" />
-              Record Payment
-            </Button>
+          <CardContent className="p-0">
+            <PaymentHistory payments={mockPayments} isLoading={false} itemsPerPage={5} />
           </CardContent>
         </Card>
 
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {[1, 2, 3].map((item) => (
-              <div key={item} className="flex items-start gap-4">
-                <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
-                  <CheckCircle2 className="h-5 w-5 text-green-500" />
+        {/* Quick Actions */}
+        <div className="grid gap-4 grid-cols-1 lg:grid-cols-3">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg">Quick Actions</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <Button variant="outline" className="w-full justify-start gap-2">
+                <Plus className="h-4 w-4" />
+                Create New Invoice
+              </Button>
+              <Button variant="outline" className="w-full justify-start gap-2">
+                <Users className="h-4 w-4" />
+                Add New Customer
+              </Button>
+              <Button variant="outline" className="w-full justify-start gap-2">
+                <DollarSign className="h-4 w-4" />
+                Record Payment
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle>Recent Activity</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {[1, 2, 3].map((item) => (
+                <div key={item} className="flex items-start gap-4">
+                  <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
+                    <CheckCircle2 className="h-5 w-5 text-green-500" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">Payment Received</p>
+                    <p className="text-sm text-muted-foreground">
+                      $1,250.00 from John Doe
+                    </p>
+                    <p className="text-xs text-muted-foreground">2 hours ago</p>
+                  </div>
+                  <Button variant="ghost" size="sm" className="h-8">
+                    View
+                  </Button>
                 </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium">Payment Received</p>
-                  <p className="text-sm text-muted-foreground">
-                    $1,250.00 from John Doe
-                  </p>
-                  <p className="text-xs text-muted-foreground">2 hours ago</p>
-                </div>
-                <Button variant="ghost" size="sm" className="h-8">
-                  View
-                </Button>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
-  </main>
-</div>
-</div>
-)};
+  );
+}
