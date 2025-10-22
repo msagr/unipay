@@ -4,7 +4,7 @@ services:
       restart: always
       build:
         context: .
-        dockerfile: docker/local/backend/Dockerfile
+        dockerfile: docker/prod/backend/Dockerfile
       ports:
         - "3001:3000"
       volumes:
@@ -27,7 +27,7 @@ services:
       restart: always
       build:
         context: .
-        dockerfile: docker/local/frontend/Dockerfile
+        dockerfile: docker/prod/frontend/Dockerfile
       ports:
         - "4001:4000"
       volumes:
@@ -52,22 +52,6 @@ services:
       environment:
         - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}
         - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
-      networks:
-        - unipay
-    
-    mongo-express:
-      image: mongo-express:latest
-      container_name: mongo-express
-      ports:
-        - "8081:8081"
-      environment:
-        - ME_CONFIG_MONGODB_ADMINUSERNAME=${MONGO_INITDB_ROOT_USERNAME}
-        - ME_CONFIG_MONGODB_ADMINPASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
-        - ME_CONFIG_MONGODB_SERVER=mongo
-        - ME_CONFIG_BASICAUTH_PASSWORD=password123
-        - ME_CONFIG_BASICAUTH_USERNAME=admin
-      depends_on:
-        - mongo
       networks:
         - unipay
     

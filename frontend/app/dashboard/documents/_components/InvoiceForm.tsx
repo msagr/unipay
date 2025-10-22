@@ -60,7 +60,8 @@ export function InvoiceForm() {
         const accessKey = localStorage.getItem(username);
         if (!accessKey) throw new Error("Access key not found");
 
-        const res = await fetch("http://localhost:3000/api/v1/customer/all", {
+        const url = `${process.env.NEXT_PUBLIC_BACKEND_URI}/api/v1/customer/all`;
+        const res = await fetch(url, {
           headers: {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${accessKey}`,
@@ -123,7 +124,7 @@ export function InvoiceForm() {
     }
 
     const accessKey = username ? localStorage.getItem(username) : null;
-    const res = await fetch("http://localhost:3000/api/v1/document/create", {
+    const res = await fetch(`${process.env.BACKEND_URL}/api/v1/document/create`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

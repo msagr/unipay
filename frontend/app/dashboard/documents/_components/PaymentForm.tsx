@@ -70,8 +70,10 @@ export function PaymentForm({ document, onSuccess }: PaymentFormProps) {
       const accessKey = localStorage.getItem(username);
       if (!accessKey) return;
 
+      const url = `${process.env.NEXT_PUBLIC_BACKEND_URI}/api/v1/customer/all`;
+
       try {
-        const res = await fetch('http://localhost:3000/api/v1/customer/all', {
+        const res = await fetch(url, {
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${accessKey}`,
@@ -139,7 +141,7 @@ export function PaymentForm({ document, onSuccess }: PaymentFormProps) {
     setIsProcessing(true);
 
     try {
-      const res = await fetch(`http://localhost:3000/api/v1/document/${document._id}/payment`, {
+      const res = await fetch(`${process.env.BACKEND_URL}/api/v1/document/${document._id}/payment`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

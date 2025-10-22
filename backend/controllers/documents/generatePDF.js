@@ -10,7 +10,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Ensure docs folder exists
-const docsDir = path.join(__dirname, "../../../docs");
+const docsDir = path.join(__dirname, "../../docs");
 if (!fs.existsSync(docsDir)) {
   fs.mkdirSync(docsDir, { recursive: true });
 }

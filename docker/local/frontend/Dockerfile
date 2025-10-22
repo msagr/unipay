@@ -5,6 +5,10 @@ FROM node:${NODE_VERSION}
 ARG APP_HOME=/app
 WORKDIR ${APP_HOME}
 
+# Set environment variable to detect if app is inside Docker
+ENV NODE_ENV=staging
+ENV NEXT_PUBLIC_BACKEND_URI=http://localhost:8080
+
 # Copy only package.json and lock first for caching
 COPY frontend/package*.json ./
 

@@ -2,3 +2,5 @@
 logs/
 node_modules
 docs
+.frontend.env 
+.backend.env

@@ -63,8 +63,9 @@ export default function DocumentsPage() {
         const accessKey = localStorage.getItem(username);
         if (!accessKey) throw new Error("Access key not found");
 
+        const url = `${process.env.NEXT_PUBLIC_BACKEND_URI}/api/v1/document/all?page=${currentPage}`;
         const res = await fetch(
-          `http://localhost:3000/api/v1/document/all?page=${currentPage}`,
+          url,
           {
             headers: {
               "Content-Type": "application/json",
@@ -106,8 +107,15 @@ export default function DocumentsPage() {
       const accessKey = username ? localStorage.getItem(username) : null;
       if (!accessKey) throw new Error("Access key not found");
 
+      let url;
+      if(process.env.NODE_ENV === 'development') {
+        url = `${process.env.NEXT_PUBLIC_BACKEND_URI}/api/v1/document/${documentToDelete}`;
+      } else {
+        url = `/api/v1/document/${documentToDelete}`;
+      }
+
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/document/${documentToDelete}`,
+        url,
         {
           method: "DELETE",
           headers: {
