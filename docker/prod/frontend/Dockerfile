@@ -1,47 +1,52 @@
-# Stage 1: Build the application
+# ---------------------------
+# Stage 1: Build Next.js
+# ---------------------------
 ARG NODE_VERSION=22.19.0
+FROM node:${NODE_VERSION} AS builder
 
-FROM node:${NODE_VERSION} AS build
-
+# App working directory
 ARG APP_HOME=/app
 WORKDIR ${APP_HOME}
 
-# Install build tools for compiling dependencies
+# Set production env variables
+ENV NODE_ENV=production
+ENV NEXT_PUBLIC_BACKEND_URI=http://localhost:8080
+
+# Copy package.json and package-lock.json first (for caching deps)
+COPY frontend/package*.json ./
+
+# Install build dependencies
 RUN apt-get update && apt-get install -y python3 make g++ \
+    && npm ci \
+    && npm install lightningcss-linux-x64-gnu @tailwindcss/oxide-linux-x64-gnu \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Copy only package.json and lock first for caching npm install
-COPY frontend/package*.json ./
-
-# Install dependencies (including build dependencies)
-RUN npm install
-
-# Copy the application code and build the frontend
+# Copy app source code
 COPY frontend/ ${APP_HOME}
 
-# Run the build process (e.g., build the app with npm run build)
+# Build Next.js
 RUN npm run build
 
-# Stage 2: Production environment (lighter and without build tools)
-FROM node:${NODE_VERSION} AS production
+# ---------------------------
+# Stage 2: Production image
+# ---------------------------
+FROM node:${NODE_VERSION}
 
 ARG APP_HOME=/app
 WORKDIR ${APP_HOME}
 
-# Set NODE_ENV to production to avoid installing dev dependencies
+# Set production env variables
 ENV NODE_ENV=production
+ENV NEXT_PUBLIC_BACKEND_URI=http://localhost:8080
 
-# Copy only the built files from the build stage
-COPY --from=build ${APP_HOME}/dist ${APP_HOME}/dist
+# Copy build artifacts + node_modules from builder
+COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
 
-# Copy the package.json (no need for node_modules in prod)
-COPY frontend/package*.json ./
-
-# Install only production dependencies (omit dev dependencies)
-RUN npm install --production
-
-# Expose the port that the app will run on (e.g., 3000 for React apps)
+# Expose port
 EXPOSE 3000
 
-# Default command to start the app (e.g., running with a production server)
-CMD ["npm", "run", "start"]
+# Start Next.js in production
+CMD ["npx", "next", "start"]

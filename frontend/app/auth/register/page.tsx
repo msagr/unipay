@@ -82,7 +82,11 @@ export default function SignupPage() {
   setIsLoading(true);
 
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/api/v1/auth/register`, {
+    let url = process.env.NEXT_PUBLIC_BACKEND_URI;
+    if (process.env.NODE_ENV === "production") {
+      url = process.env.NEXT_PUBLIC_EXPRESS_URI;
+    }
+    const response = await fetch(`${url}/api/v1/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),

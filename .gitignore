@@ -4,3 +4,5 @@ node_modules
 docs
 .frontend.env 
 .backend.env
+.frontend.prod.env
+.backend.prod.env

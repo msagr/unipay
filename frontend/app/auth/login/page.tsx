@@ -52,7 +52,11 @@ function LoginForm({ searchParams }: { searchParams: URLSearchParams }) {
     setIsLoading(true);
     
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/api/v1/auth/login`, {
+      let url = process.env.NEXT_PUBLIC_BACKEND_URI;
+      if(process.env.NODE_ENV === "production") {
+        url = process.env.NEXT_PUBLIC_EXPRESS_URI;
+      }
+      const response = await fetch(`${url}/api/v1/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),

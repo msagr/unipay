@@ -65,9 +65,12 @@ export default function CustomerCreateForm() {
         return;
       }
 
-      const url = `${process.env.NEXT_PUBLIC_BACKEND_URI}/api/v1/customer/create`;
+      let url = process.env.NEXT_PUBLIC_BACKEND_URI;
+      if (process.env.NODE_ENV === "production") {
+        url = process.env.NEXT_PUBLIC_EXPRESS_URI;
+      }
 
-      const res = await fetch(url, {
+      const res = await fetch(`${url}/api/v1/customer/create`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

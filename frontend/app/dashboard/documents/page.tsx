@@ -63,9 +63,12 @@ export default function DocumentsPage() {
         const accessKey = localStorage.getItem(username);
         if (!accessKey) throw new Error("Access key not found");
 
-        const url = `${process.env.NEXT_PUBLIC_BACKEND_URI}/api/v1/document/all?page=${currentPage}`;
+        let url = process.env.NEXT_PUBLIC_BACKEND_URI;
+        if (process.env.NODE_ENV === "production") {
+          url = process.env.NEXT_PUBLIC_EXPRESS_URI;
+        }
         const res = await fetch(
-          url,
+          `${url}/api/v1/document/all?page=${currentPage}`,
           {
             headers: {
               "Content-Type": "application/json",

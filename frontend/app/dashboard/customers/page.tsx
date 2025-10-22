@@ -71,9 +71,12 @@ export default function CustomersPageUI() {
         const accessKey = typeof window !== "undefined" && window.localStorage ? window.localStorage.getItem(username) : null;
         if (!accessKey) throw new Error('Access key not found');
 
-        const url = `${process.env.NEXT_PUBLIC_BACKEND_URI}/api/v1/customer/all?page=${page}`;
+        let url = process.env.NEXT_PUBLIC_BACKEND_URI;
+        if (process.env.NODE_ENV === "production") {
+          url = process.env.NEXT_PUBLIC_EXPRESS_URI;
+        }
         const res = await fetch(
-          url,
+          `${url}/api/v1/customer/all?page=${page}`,
           {
             headers: {
               'Content-Type': 'application/json',

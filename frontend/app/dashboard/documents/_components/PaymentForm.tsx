@@ -70,10 +70,13 @@ export function PaymentForm({ document, onSuccess }: PaymentFormProps) {
       const accessKey = localStorage.getItem(username);
       if (!accessKey) return;
 
-      const url = `${process.env.NEXT_PUBLIC_BACKEND_URI}/api/v1/customer/all`;
+      let url = process.env.NEXT_PUBLIC_BACKEND_URI;
+      if (process.env.NODE_ENV === "production") {
+        url = process.env.NEXT_PUBLIC_EXPRESS_URI;
+      }
 
       try {
-        const res = await fetch(url, {
+        const res = await fetch(`${url}/api/v1/customer/all`, {
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${accessKey}`,

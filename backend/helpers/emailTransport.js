@@ -3,7 +3,7 @@ import nodemailer from "nodemailer";
 
 let transporter;
 
-if (process.env.NODE_ENV === "development") {
+if (process.env.NODE_ENV === "development" || process.env.NODE_ENV === "staging") {
 	transporter = nodemailer.createTransport({
 		host: "mailhog",
 		port: 1025,

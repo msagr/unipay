@@ -1,6 +1,6 @@
 services:
-    api:
-      container_name: api
+    api-prod:
+      container_name: api-prod
       restart: always
       build:
         context: .
@@ -9,22 +9,16 @@ services:
         - "3001:3000"
       volumes:
         - ./backend:/app
-        - api-logs:/app/logs 
       environment:
         - PORT=3000 
-        - NODE_ENV=staging
         - MONGO_URI=${MONGO_URI}
       env_file:
-        - .backend.env
-      depends_on:
-        - mongo
-        - mailhog
+        - .backend.prod.env
       networks:
-        - unipay
+        - unipay-prod
     
-    frontend:
-      container_name: frontend
-      restart: always
+    frontend-prod:
+      container_name: frontend-prod
       build:
         context: .
         dockerfile: docker/prod/frontend/Dockerfile
@@ -35,55 +29,26 @@ services:
       environment:
         - PORT=4000
       env_file:
-        - .frontend.env
+        - .frontend.prod.env
       depends_on:
-        - api
+        - api-prod
       networks:
-        - unipay
+        - unipay-prod
     
-    mongo:
-      image: mongo:latest
-      container_name: mongo
-      restart: always
-      ports:
-        - "27017:27017"
-      volumes:
-        - mongo-data:/data/db
-      environment:
-        - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}
-        - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
-      networks:
-        - unipay
-    
-    mailhog:
-      image: mailhog/mailhog:latest
-      container_name: mailhog
-      ports:
-        - "1025:1025"
-        - "8025:8025"
-      networks:
-        - unipay
-    
-    nginx:
-      container_name: nginx
+    nginx-prod:
+      container_name: nginx-prod
       restart: always
       build:
         context: .
-        dockerfile: docker/local/nginx/Dockerfile
+        dockerfile: docker/prod/nginx/Dockerfile
       ports:
         - "8080:80"
-      volumes:
-        - ./docker/local/nginx/default.conf:/etc/nginx/conf.d/default.conf
       depends_on:
-        - api
-        - frontend
+        - api-prod
+        - frontend-prod
       networks:
-        - unipay
+        - unipay-prod
 
 networks:
-  unipay:
+  unipay-prod:
     driver: bridge
-
-volumes:
-  mongo-data:
-  api-logs:
