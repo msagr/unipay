@@ -46,7 +46,7 @@ COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 
 # Expose port
-EXPOSE 3000
+EXPOSE 4000
 
 # Start Next.js in production
 CMD ["npx", "next", "start"]

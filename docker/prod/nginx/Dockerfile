@@ -1,7 +1,4 @@
-FROM nginx:latest
+FROM public.ecr.aws/nginx/nginx:mainline
 
-RUN rm /etc/nginx/conf.d/default.conf
-
-COPY ./docker/prod/nginx/default.conf /etc/nginx/conf.d/default.conf 
-
-CMD ["nginx", "-g", "daemon off;"]
+ADD index.html /etc/nginx/html/index.html
+ADD nginx.conf /etc/nginx/nginx.conf
